@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from 'react';
 
 export default function PaymentMethodCashFixer({
   trabajo,
@@ -12,7 +12,7 @@ export default function PaymentMethodCashFixer({
   onBack: (opts?: { refresh?: boolean }) => void;
 }) {
   // Estados de UI
-  const [codigoIngresado, setCodigoIngresado] = useState("");
+  const [codigoIngresado, setCodigoIngresado] = useState('');
   const [loading, setLoading] = useState(true);
   const [patching, setPatching] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -27,7 +27,7 @@ export default function PaymentMethodCashFixer({
   const [summary, setSummary] = useState<{
     id: string;
     code?: string | null;
-    status: "paid" | "pending" | "failed";
+    status: 'paid' | 'pending' | 'failed';
     amount: { total: number; currency: string };
   } | null>(null);
 
@@ -50,7 +50,7 @@ export default function PaymentMethodCashFixer({
   // GET summary
   async function fetchSummary() {
     if (!trabajo?.id) {
-      setErr("No hay paymentId para consultar.");
+      setErr('No hay paymentId para consultar.');
       setLoading(false);
       return;
     }
@@ -61,33 +61,33 @@ export default function PaymentMethodCashFixer({
     setLoading(true);
     try {
       const res = await fetch(`/api/lab/payments/${trabajo.id}/summary`, {
-        cache: "no-store",
+        cache: 'no-store',
       });
       if (!res.ok) {
-        const text = await res.text().catch(() => "");
+        const text = await res.text().catch(() => '');
         throw new Error(text || `HTTP ${res.status}`);
       }
       const data = await res.json();
       const d = data?.data ?? data;
 
       const total =
-        typeof d?.total === "number"
+        typeof d?.total === 'number'
           ? d.total
-          : typeof d?.amount?.total === "number"
-          ? d.amount.total
-          : NaN;
+          : typeof d?.amount?.total === 'number'
+            ? d.amount.total
+            : NaN;
 
       setSummary({
         id: String(d?.id ?? d?._id ?? trabajo.id),
         code: d?.code ?? null,
-        status: (d?.status ?? "pending") as "paid" | "pending" | "failed",
+        status: (d?.status ?? 'pending') as 'paid' | 'pending' | 'failed',
         amount: {
           total,
-          currency: d?.amount?.currency ?? d?.currency ?? "BOB",
+          currency: d?.amount?.currency ?? d?.currency ?? 'BOB',
         },
       });
     } catch (e: any) {
-      setErr(e.message || "No se pudo cargar el resumen");
+      setErr(e.message || 'No se pudo cargar el resumen');
     } finally {
       setLoading(false);
     }
@@ -102,9 +102,9 @@ export default function PaymentMethodCashFixer({
   const handleContinuar = async () => {
     if (!summary) return;
 
-    const provided = (codigoIngresado || "").toUpperCase().trim();
+    const provided = (codigoIngresado || '').toUpperCase().trim();
     if (!provided) {
-      setErr("Ingrese el código.");
+      setErr('Ingrese el código.');
       return;
     }
 
@@ -116,8 +116,8 @@ export default function PaymentMethodCashFixer({
 
     try {
       const res = await fetch(`/api/lab/payments/${summary.id}/confirm`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: provided }),
       });
 
@@ -125,16 +125,16 @@ export default function PaymentMethodCashFixer({
 
       // ✅ Código correcto
       if (res.ok) {
-        setOkMsg(responseData?.message || "Pago confirmado exitosamente.");
+        setOkMsg(responseData?.message || 'Pago confirmado exitosamente.');
         // Refrescar summary desde backend
         await fetchSummary();
         // Limpiar el input después de confirmación exitosa
-        setCodigoIngresado("");
+        setCodigoIngresado('');
         return;
       }
 
       // ❌ Manejo de errores según código de estado
-      
+
       // 429 - Bloqueado por demasiados intentos
       if (res.status === 429) {
         if (responseData.unlocksAt) {
@@ -143,47 +143,48 @@ export default function PaymentMethodCashFixer({
           const unlockDate = new Date(Date.now() + responseData.waitMinutes * 60000);
           setUnlockAtISO(unlockDate.toISOString());
         }
-        
-        const errorMsg = responseData.message || responseData.error || 
-          "Has superado el número máximo de intentos. La cuenta está bloqueada temporalmente.";
+
+        const errorMsg =
+          responseData.message ||
+          responseData.error ||
+          'Has superado el número máximo de intentos. La cuenta está bloqueada temporalmente.';
         throw new Error(errorMsg);
       }
 
       // 401 - Código inválido con intentos restantes
       if (res.status === 401) {
-        if (typeof responseData.remainingAttempts === "number") {
+        if (typeof responseData.remainingAttempts === 'number') {
           setRemainingAttempts(responseData.remainingAttempts);
         }
-        
-        const errorMsg = responseData.message || responseData.error || "Código inválido";
+
+        const errorMsg = responseData.message || responseData.error || 'Código inválido';
         throw new Error(errorMsg);
       }
 
       // 410 - Código expirado
       if (res.status === 410) {
-        throw new Error(responseData.error || "El código ha expirado");
+        throw new Error(responseData.error || 'El código ha expirado');
       }
 
       // 400 - Bad Request
       if (res.status === 400) {
-        throw new Error(responseData.error || "Solicitud inválida");
+        throw new Error(responseData.error || 'Solicitud inválida');
       }
 
       // 404 - No encontrado
       if (res.status === 404) {
-        throw new Error(responseData.error || "Pago no encontrado");
+        throw new Error(responseData.error || 'Pago no encontrado');
       }
 
       // 409 - Conflicto (ya procesado)
       if (res.status === 409) {
-        throw new Error(responseData.error || "El pago ya fue procesado");
+        throw new Error(responseData.error || 'El pago ya fue procesado');
       }
 
       // Otros errores
       throw new Error(responseData.error || responseData.message || `Error ${res.status}`);
-
     } catch (e: any) {
-      setErr(e.message || "Error al confirmar el pago");
+      setErr(e.message || 'Error al confirmar el pago');
     } finally {
       setPatching(false);
     }
@@ -214,14 +215,14 @@ export default function PaymentMethodCashFixer({
           <div className="text-red-600 font-medium text-lg mb-2">Error</div>
           <div className="text-gray-700 text-sm mb-4">{err}</div>
           <div className="flex justify-end gap-3">
-            <button 
-              onClick={handleVolver} 
+            <button
+              onClick={handleVolver}
               className="px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-50"
             >
               Volver
             </button>
-            <button 
-              onClick={onClose} 
+            <button
+              onClick={onClose}
               className="px-4 py-2 rounded-md bg-gray-900 text-white hover:bg-gray-800"
             >
               Cerrar
@@ -242,8 +243,8 @@ export default function PaymentMethodCashFixer({
         {/* Header */}
         <div className="bg-blue-600 text-white px-6 py-4 flex items-center justify-between rounded-t-lg">
           <h1 className="text-xl font-semibold">Método de pago Efectivo — Vista FIXER</h1>
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             className="hover:bg-blue-700 px-3 py-1 rounded text-xl transition-colors"
           >
             ✕
@@ -263,7 +264,11 @@ export default function PaymentMethodCashFixer({
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
                     <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   </div>
                   <div className="ml-3">
@@ -287,16 +292,13 @@ export default function PaymentMethodCashFixer({
             />
 
             {/* Monto */}
-            <ReadOnly 
-              label="Monto a Cobrar" 
-              value={`${summary.amount.total} ${summary.amount.currency}`} 
+            <ReadOnly
+              label="Monto a Cobrar"
+              value={`${summary.amount.total} ${summary.amount.currency}`}
             />
 
             {/* Estado */}
-            <ReadOnly 
-              label="Estado" 
-              value={summary.status.toUpperCase()} 
-            />
+            <ReadOnly label="Estado" value={summary.status.toUpperCase()} />
           </div>
 
           {/* Mensajes */}
@@ -306,13 +308,13 @@ export default function PaymentMethodCashFixer({
                 <p className="text-emerald-700 font-medium">{okMsg}</p>
               </div>
             )}
-            
+
             {err && (
               <div className="bg-red-50 border border-red-200 rounded p-3">
                 <p className="text-rose-600 font-medium">{err}</p>
               </div>
             )}
-            
+
             {remainingAttempts !== null && !locked && (
               <div className="bg-amber-50 border border-amber-200 rounded p-2">
                 <p className="text-amber-700 text-sm">
@@ -320,13 +322,13 @@ export default function PaymentMethodCashFixer({
                 </p>
               </div>
             )}
-            
+
             {locked && (
               <div className="bg-red-50 border border-red-200 rounded p-3">
                 <p className="text-red-700 text-sm font-medium">
-                  🔒 Cuenta bloqueada. Intenta en:{" "}
+                  🔒 Cuenta bloqueada. Intenta en:{' '}
                   <b className="text-lg">
-                    {minutesLeft > 0 ? `${minutesLeft}m ` : ""}
+                    {minutesLeft > 0 ? `${minutesLeft}m ` : ''}
                     {secondsLeft}s
                   </b>
                 </p>
@@ -341,11 +343,11 @@ export default function PaymentMethodCashFixer({
               disabled={!codigoIngresado || patching || locked}
               className={`px-12 py-3 text-white text-lg font-semibold rounded-md transition-colors ${
                 !codigoIngresado || patching || locked
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-black hover:bg-gray-800"
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-black hover:bg-gray-800'
               }`}
             >
-              {patching ? "Confirmando…" : locked ? "Bloqueado" : "Continuar"}
+              {patching ? 'Confirmando…' : locked ? 'Bloqueado' : 'Continuar'}
             </button>
             <button
               onClick={handleVolver}
@@ -377,11 +379,7 @@ function Overlay({ children }: { children: React.ReactNode }) {
 }
 
 function Box({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="bg-white rounded-lg shadow-xl px-8 py-6 max-w-md">
-      {children}
-    </div>
-  );
+  return <div className="bg-white rounded-lg shadow-xl px-8 py-6 max-w-md">{children}</div>;
 }
 
 function RowInput(props: {
@@ -394,9 +392,7 @@ function RowInput(props: {
   const { label, value, onChange, placeholder, disabled } = props;
   return (
     <div className="flex items-center gap-6">
-      <label className="text-lg font-semibold text-gray-900 w-48 text-left">
-        {label}
-      </label>
+      <label className="text-lg font-semibold text-gray-900 w-48 text-left">{label}</label>
       <input
         type="text"
         value={value}
@@ -412,9 +408,7 @@ function RowInput(props: {
 function ReadOnly({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center gap-6">
-      <label className="text-lg font-semibold text-gray-900 w-48 text-left">
-        {label}
-      </label>
+      <label className="text-lg font-semibold text-gray-900 w-48 text-left">{label}</label>
       <input
         type="text"
         value={value}

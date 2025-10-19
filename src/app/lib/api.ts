@@ -1,13 +1,13 @@
 // src/lib/api.ts
 export async function apiFetch<T = any>(
   path: string,
-  init?: RequestInit & { json?: any }
+  init?: RequestInit & { json?: any },
 ): Promise<T> {
   const opts: RequestInit = {
-    cache: "no-store",
+    cache: 'no-store',
     ...init,
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       ...(init?.headers || {}),
     },
   };
@@ -16,10 +16,10 @@ export async function apiFetch<T = any>(
   }
   const res = await fetch(`/api${path}`, opts);
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
+    const text = await res.text().catch(() => '');
     throw new Error(`API ${res.status}: ${text || res.statusText}`);
   }
   // algunos endpoints devuelven 204; adapta si fuera tu caso
-  const ct = res.headers.get("content-type") || "";
-  return ct.includes("application/json") ? res.json() : ({} as T);
+  const ct = res.headers.get('content-type') || '';
+  return ct.includes('application/json') ? res.json() : ({} as T);
 }

@@ -1,4 +1,5 @@
-"use client";
+//src/app/payment/PaymentDemo.tsx
+'use client';
 
 import React, { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
@@ -6,6 +7,8 @@ import { Elements } from '@stripe/react-stripe-js';
 import PaymentMethodUI from './PaymentMethodUI';
 import CardList from './CardList';
 import { createCashPayment } from '../service/payments';
+
+import Link from 'next/link';
 
 const stripePromise = loadStripe(
   'pk_test_51SIL9sCiQE1vT29jMXy7gnJ1N2VvGHHvLLPyhlVqEWoCGLhsQJXcR4ZtROYiJgiezETeTV2B67cGaoGHuXPJwnCp003Ix0t5oI',
@@ -33,7 +36,7 @@ export default function PaymentDemo() {
   const agregarTrabajo = () => {
     const nuevoId = trabajos.length > 0 ? Math.max(...trabajos.map((t) => t.id)) + 1 : 1;
     const montoAleatorio = Math.floor(Math.random() * (500 - 100 + 1)) + 100;
-    setTrabajos(prev => [...prev, { id: nuevoId, estado: 'Sin Pagar', monto: montoAleatorio }]);
+    setTrabajos((prev) => [...prev, { id: nuevoId, estado: 'Sin Pagar', monto: montoAleatorio }]);
   };
 
   const handlePagar = (trabajo: any) => {
@@ -80,10 +83,14 @@ export default function PaymentDemo() {
           <span className="text-2xl">🔧</span>
           Agregar Trabajo
         </button>
-        <button className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg flex items-center gap-2 text-lg font-medium">
-          <span className="text-2xl">🏦</span>
-          Agregar cuenta bancaria
-        </button>
+
+        <Link href="/registro-cuenta" passHref>
+          <button className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg flex items-center gap-2 text-lg font-medium">
+            <span className="text-2xl">🏦</span>
+            Agregar cuenta bancaria
+          </button>
+        </Link>
+
         <div className="ml-auto bg-blue-600 text-white px-6 py-3 rounded-lg text-lg font-medium">
           Estado: SCB
         </div>
@@ -150,10 +157,7 @@ export default function PaymentDemo() {
 
       {/* Cash Payment Modal */}
       {showCashPayment && (
-        <PaymentMethodUI
-          paymentId={createdPaymentId}
-          onClose={handleCloseCashPayment}
-        />
+        <PaymentMethodUI paymentId={createdPaymentId} onClose={handleCloseCashPayment} />
       )}
 
       {/* Card Payment Modal */}
@@ -213,13 +217,13 @@ function PaymentMethodSelector({
     setLoading(true);
     try {
       const payload = {
-        jobId: "66fabc1234567890abc12345",
-        payerId: "66fdef1234567890abc12345",
+        jobId: '66fabc1234567890abc12345',
+        payerId: '66fdef1234567890abc12345',
         subTotal: Number(trabajo?.monto || 0),
         service_fee: 0,
         discount: 0,
-        currency: "BOB",
-        paymentMethod: "Efectivo",
+        currency: 'BOB',
+        paymentMethod: 'Efectivo',
       };
       const resp = await createCashPayment(payload);
       const created = resp?.data || resp?.payment || resp;

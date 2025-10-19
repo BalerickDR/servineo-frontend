@@ -1,4 +1,4 @@
-"use client"
+'use client';
 
 import React, { useState } from 'react';
 
@@ -18,13 +18,10 @@ const PaymentContainer = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-      
       {/* Renderizar componente según el paso actual */}
-      {currentStep === 'select' && (
-        <PaymentDemo onSelectMethod={handleSelectMethod} />
-      )}
-      
-     {/* {currentStep === 'card' && (
+      {currentStep === 'select' && <PaymentDemo onSelectMethod={handleSelectMethod} />}
+
+      {/* {currentStep === 'card' && (
         <CardPayment onBack={handleBack} />
       )}
       
@@ -32,9 +29,7 @@ const PaymentContainer = () => {
         <QRPayment onBack={handleBack} />
       )}*/}
 
-      {currentStep === 'cash' && (
-        <PaymentMethodUI onBack={handleBack} />
-      )}
+      {currentStep === 'cash' && <PaymentMethodUI onBack={handleBack} />}
     </div>
   );
 };

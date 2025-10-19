@@ -1,20 +1,20 @@
-"use client";
-import { useEffect, useState } from "react";
-import AddCardModal from "./AddCardModal";
-import "../../../app/globals.css";
-import { motion, AnimatePresence } from "framer-motion";
+'use client';
+import { useEffect, useState } from 'react';
+import AddCardModal from './AddCardModal';
+import '../../../app/globals.css';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CardList({ requesterId, fixerId, jobId, amount }) {
   const [cards, setCards] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [processingCardId, setProcessingCardId] = useState(null);
-  const [successMessage, setSuccessMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState('');
   const [confirmModal, setConfirmModal] = useState(null); // card a pagar
 
   const fetchCards = async () => {
     try {
       const res = await fetch(`http://localhost:4000/api/cards?userId=${requesterId}`);
-      if (!res.ok) throw new Error("Error fetching cards");
+      if (!res.ok) throw new Error('Error fetching cards');
       const data = await res.json();
       setCards(data);
     } catch (err) {
@@ -42,9 +42,9 @@ export default function CardList({ requesterId, fixerId, jobId, amount }) {
     setConfirmModal(null);
 
     try {
-      const paymentRes = await fetch("http://localhost:4000/api/createpayment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const paymentRes = await fetch('http://localhost:4000/api/createpayment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           requesterId,
           fixerId,
@@ -57,7 +57,7 @@ export default function CardList({ requesterId, fixerId, jobId, amount }) {
       const paymentData = await paymentRes.json();
 
       if (!paymentRes.ok) {
-        alert(`Error en el pago: ${paymentData?.error || "Desconocido"}`);
+        alert(`Error en el pago: ${paymentData?.error || 'Desconocido'}`);
         return;
       }
 
@@ -65,7 +65,7 @@ export default function CardList({ requesterId, fixerId, jobId, amount }) {
       await fetchCards();
     } catch (err) {
       console.error(err);
-      alert("Error al procesar el pago. Revisa la consola.");
+      alert('Error al procesar el pago. Revisa la consola.');
     } finally {
       setProcessingCardId(null);
     }
@@ -73,15 +73,15 @@ export default function CardList({ requesterId, fixerId, jobId, amount }) {
 
   const showSuccessModal = (msg) => {
     setSuccessMessage(msg);
-    setTimeout(() => setSuccessMessage(""), 2500);
+    setTimeout(() => setSuccessMessage(''), 2500);
   };
 
   // 🎨 Paleta más realista y oscura
   const cardBackgrounds = {
-    visa: "from-blue-950 via-blue-800 to-blue-700",
-    mastercard: "from-red-900 via-orange-800 to-yellow-700",
-    amex: "from-cyan-900 via-teal-800 to-teal-700",
-    default: "from-gray-800 via-gray-700 to-gray-600",
+    visa: 'from-blue-950 via-blue-800 to-blue-700',
+    mastercard: 'from-red-900 via-orange-800 to-yellow-700',
+    amex: 'from-cyan-900 via-teal-800 to-teal-700',
+    default: 'from-gray-800 via-gray-700 to-gray-600',
   };
 
   const getCardBackground = (brand) => {
@@ -98,7 +98,7 @@ export default function CardList({ requesterId, fixerId, jobId, amount }) {
           onClick={() => setShowModal(true)}
           className="px-6 py-3 bg-blue-700 rounded-xl shadow-lg hover:bg-blue-800 transition-all font-semibold flex items-center gap-2"
         >
-           Agregar➕
+          Agregar➕
         </motion.button>
       </div>
 
@@ -111,14 +111,14 @@ export default function CardList({ requesterId, fixerId, jobId, amount }) {
               key={card._id}
               initial={{ rotateY: 10, rotateX: 8, y: 10, opacity: 0 }}
               animate={{ rotateY: 0, rotateX: 0, y: 0, opacity: 1 }}
-              transition={{ type: "spring", stiffness: 120, damping: 10, delay: index * 0.1 }}
+              transition={{ type: 'spring', stiffness: 120, damping: 10, delay: index * 0.1 }}
               whileHover={{
                 rotateY: 8,
                 y: -5,
-                boxShadow: "0px 8px 25px rgba(0,0,0,0.3)",
+                boxShadow: '0px 8px 25px rgba(0,0,0,0.3)',
               }}
               className={`relative rounded-2xl shadow-2xl p-6 text-white bg-gradient-to-br ${getCardBackground(
-                card.brand
+                card.brand,
               )} cursor-pointer border border-white/10`}
             >
               {/* Reflejo */}
@@ -129,11 +129,11 @@ export default function CardList({ requesterId, fixerId, jobId, amount }) {
                 <p className="text-lg font-semibold tracking-wide uppercase">{card.brand}</p>
                 <img
                   src={
-                    card.brand?.toLowerCase() === "visa"
-                      ? "https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg"
-                      : card.brand?.toLowerCase() === "mastercard"
-                      ? "https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg"
-                      : "https://upload.wikimedia.org/wikipedia/commons/f/fd/Generic-credit-card-icon.svg"
+                    card.brand?.toLowerCase() === 'visa'
+                      ? 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg'
+                      : card.brand?.toLowerCase() === 'mastercard'
+                        ? 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg'
+                        : 'https://upload.wikimedia.org/wikipedia/commons/f/fd/Generic-credit-card-icon.svg'
                   }
                   alt="brand"
                   className="h-6 w-auto"
@@ -172,13 +172,11 @@ export default function CardList({ requesterId, fixerId, jobId, amount }) {
                 disabled={processingCardId === card._id}
                 className={`mt-6 w-full py-2 rounded-xl font-bold text-white shadow-lg ${
                   processingCardId === card._id
-                    ? "bg-green-500 cursor-not-allowed"
-                    : "bg-green-700 hover:bg-green-800"
+                    ? 'bg-green-500 cursor-not-allowed'
+                    : 'bg-green-700 hover:bg-green-800'
                 }`}
               >
-                {processingCardId === card._id
-                  ? "Procesando..."
-                  : `Pagar ${amount} BOB`}
+                {processingCardId === card._id ? 'Procesando...' : `Pagar ${amount} BOB`}
               </motion.button>
             </motion.div>
           ))}
@@ -214,7 +212,8 @@ export default function CardList({ requesterId, fixerId, jobId, amount }) {
             >
               <h2 className="text-xl font-bold mb-4">⚠️ Confirmar Pago</h2>
               <p className="text-gray-300 mb-6">
-                ¿Seguro que deseas pagar <span className="font-bold text-green-400">{amount} BOB</span> 
+                ¿Seguro que deseas pagar{' '}
+                <span className="font-bold text-green-400">{amount} BOB</span>
                 con la tarjeta terminada en <span className="font-bold">{confirmModal.last4}</span>?
               </p>
               <div className="flex justify-center gap-4">
