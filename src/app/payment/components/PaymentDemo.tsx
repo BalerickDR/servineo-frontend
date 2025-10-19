@@ -1,5 +1,5 @@
 //src/app/payment/PaymentDemo.tsx
-"use client";
+'use client';
 
 import React, { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
@@ -15,8 +15,6 @@ const stripePromise = loadStripe(
 );
 
 export default function PaymentDemo() {
-
-  
   const [trabajos, setTrabajos] = useState([
     { id: 1, estado: 'Sin Pagar', monto: 500 },
     { id: 2, estado: 'Sin Pagar', monto: 100 },
@@ -38,7 +36,7 @@ export default function PaymentDemo() {
   const agregarTrabajo = () => {
     const nuevoId = trabajos.length > 0 ? Math.max(...trabajos.map((t) => t.id)) + 1 : 1;
     const montoAleatorio = Math.floor(Math.random() * (500 - 100 + 1)) + 100;
-    setTrabajos(prev => [...prev, { id: nuevoId, estado: 'Sin Pagar', monto: montoAleatorio }]);
+    setTrabajos((prev) => [...prev, { id: nuevoId, estado: 'Sin Pagar', monto: montoAleatorio }]);
   };
 
   const handlePagar = (trabajo: any) => {
@@ -96,7 +94,7 @@ export default function PaymentDemo() {
         <div className="ml-auto bg-blue-600 text-white px-6 py-3 rounded-lg text-lg font-medium">
           Estado: SCB
         </div>
-        </div>
+      </div>
 
       {/* Table */}
       <div className="px-6">
@@ -159,10 +157,7 @@ export default function PaymentDemo() {
 
       {/* Cash Payment Modal */}
       {showCashPayment && (
-        <PaymentMethodUI
-          paymentId={createdPaymentId}
-          onClose={handleCloseCashPayment}
-        />
+        <PaymentMethodUI paymentId={createdPaymentId} onClose={handleCloseCashPayment} />
       )}
 
       {/* Card Payment Modal */}
@@ -222,13 +217,13 @@ function PaymentMethodSelector({
     setLoading(true);
     try {
       const payload = {
-        jobId: "66fabc1234567890abc12345",
-        payerId: "66fdef1234567890abc12345",
+        jobId: '66fabc1234567890abc12345',
+        payerId: '66fdef1234567890abc12345',
         subTotal: Number(trabajo?.monto || 0),
         service_fee: 0,
         discount: 0,
-        currency: "BOB",
-        paymentMethod: "Efectivo",
+        currency: 'BOB',
+        paymentMethod: 'Efectivo',
       };
       const resp = await createCashPayment(payload);
       const created = resp?.data || resp?.payment || resp;

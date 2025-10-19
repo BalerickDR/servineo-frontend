@@ -1,5 +1,5 @@
 // --- Types compartidos UI ---
-export type Status = "paid" | "pending" | "failed";
+export type Status = 'paid' | 'pending' | 'failed';
 
 // La UI siempre consumirá este shape uniforme
 export type UISummary = {
@@ -14,14 +14,11 @@ export type UISummary = {
 };
 
 // --- Helper base: SIEMPRE rutas relativas para pasar por el proxy /api ---
-async function apiFetch<T = any>(
-  path: string,
-  init?: RequestInit & { json?: any }
-): Promise<T> {
+async function apiFetch<T = any>(path: string, init?: RequestInit & { json?: any }): Promise<T> {
   const opts: RequestInit = {
-    cache: "no-store",
+    cache: 'no-store',
     ...init,
-    headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
+    headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
   };
   if (init?.json !== undefined) {
     opts.body = JSON.stringify(init.json);
@@ -30,54 +27,54 @@ async function apiFetch<T = any>(
   const res = await fetch(`/api${path}`, opts);
 
   if (!res.ok) {
-    const raw = await res.text().catch(() => "");
+    const raw = await res.text().catch(() => '');
     let msg = raw;
-    const ct = res.headers.get("content-type") || "";
-    if (ct.includes("application/json")) {
+    const ct = res.headers.get('content-type') || '';
+    if (ct.includes('application/json')) {
       try {
         const j = JSON.parse(raw);
         msg = j?.error || j?.message || raw || `HTTP ${res.status}`;
       } catch {}
     }
-    throw new Error(`${msg || "Request failed"} (HTTP ${res.status})`);
+    throw new Error(`${msg || 'Request failed'} (HTTP ${res.status})`);
   }
 
-  const ct = res.headers.get("content-type") || "";
-  return ct.includes("application/json") ? res.json() : ({} as T);
+  const ct = res.headers.get('content-type') || '';
+  return ct.includes('application/json') ? res.json() : ({} as T);
 }
 
 // --- Normalizador: adapta cualquier backend a UISummary uniforme ---
 function normalizeSummary(d: any): UISummary {
   const total =
-    typeof d?.total === "number"
+    typeof d?.total === 'number'
       ? d.total
-      : typeof d?.amount?.total === "number"
-      ? d.amount.total
-      : NaN;
+      : typeof d?.amount?.total === 'number'
+        ? d.amount.total
+        : NaN;
 
   return {
-    id: String(d?.id ?? d?._id ?? ""),
-    status: (d?.status ?? "pending") as Status,
+    id: String(d?.id ?? d?._id ?? ''),
+    status: (d?.status ?? 'pending') as Status,
     code: d?.code ?? null,
     expiresAt: d?.expiresAt ?? null,
     amount: {
       total,
       // si el backend no manda currency, por defecto "BOB"
-      currency: d?.amount?.currency ?? d?.currency ?? "BOB",
+      currency: d?.amount?.currency ?? d?.currency ?? 'BOB',
     },
   };
 }
 
 // --- DTO de creación (cash) ---
 export type CreateCashPaymentDTO = {
-  jobId: string;                 // ObjectId válido (24 hex)
-  payerId?: string;              // ObjectId válido (si tu schema lo requiere, envíalo)
+  jobId: string; // ObjectId válido (24 hex)
+  payerId?: string; // ObjectId válido (si tu schema lo requiere, envíalo)
   subTotal: number;
   service_fee?: number;
   discount?: number;
-  currency?: "BOB" | "USD";
-  paymentMethods?: "cash" | "qr" | "card"; // enum EN INGLÉS
-  commissionRate?: number;       // 0..1
+  currency?: 'BOB' | 'USD';
+  paymentMethods?: 'cash' | 'qr' | 'card'; // enum EN INGLÉS
+  commissionRate?: number; // 0..1
 };
 
 // --- POST: crear pago (cash) ---
@@ -88,13 +85,13 @@ export async function createCashPayment(input: CreateCashPaymentDTO) {
     subTotal: input.subTotal,
     service_fee: input.service_fee ?? 0,
     discount: input.discount ?? 0,
-    currency: input.currency ?? "BOB",
-    paymentMethods: input.paymentMethods ?? "cash",
+    currency: input.currency ?? 'BOB',
+    paymentMethods: input.paymentMethods ?? 'cash',
     commissionRate: input.commissionRate ?? 0.1,
   };
 
   return apiFetch<{ message: string; data: any }>(`/lab/payments`, {
-    method: "POST",
+    method: 'POST',
     json: payload,
   });
 }
@@ -113,8 +110,8 @@ export async function getLastPaymentSummaryByJob(jobId: string): Promise<UISumma
 
 // --- PATCH: confirmar pago ---
 export async function confirmPayment(id: string, code: string) {
-  return apiFetch<{ message: string; data: { id: string; total: number; status: Status; paidAt?: string } }>(
-    `/lab/payments/${id}/confirm`,
-    { method: "PATCH", json: { code } }
-  );
+  return apiFetch<{
+    message: string;
+    data: { id: string; total: number; status: Status; paidAt?: string };
+  }>(`/lab/payments/${id}/confirm`, { method: 'PATCH', json: { code } });
 }
