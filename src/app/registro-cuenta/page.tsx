@@ -1,8 +1,11 @@
 // src/app/registro-cuenta/page.tsx (CORREGIDO)
 'use client';
 
-import React, { useState, useEffect } from 'react';
-// 🛑 ELIMINADAS: Se eliminan las importaciones que causan el error 'Module not found'.
+
+import React, { useState, useEffect, FormEvent } from 'react';
+
+
+
 // Se mantienen los componentes y la lógica de fetch dentro de handleSubmit.
 
 // ID de Fixer TEMPORAL (Necesario para que el backend guarde la cuenta)
@@ -13,7 +16,7 @@ const API_BASE_URL = '/api'; // URL base para la llamada a la API
 // --- Componentes (PaymentSuccessPage, PaymentsDemoRoot) ---
 // -----------------------------------------------------------
 
-const PaymentSuccessPage = ({ pathSetter }) => {
+const PaymentSuccessPage = ({ pathSetter }:any) => {
   // 🛑 CORREGIDO: El mensaje de estado es fijo para simplificar, pero se puede usar localStorage.
   const [statusMessage, setStatusMessage] = useState('Cuenta bancaria registrada exitosamente.');
 
@@ -66,7 +69,7 @@ const PaymentSuccessPage = ({ pathSetter }) => {
   );
 };
 
-const PaymentsDemoRoot = ({ pathSetter }) => {
+const PaymentsDemoRoot = ({ pathSetter }:any) => {
   const handleGoToRegistration = () => {
     pathSetter('/registro-cuenta');
   };
@@ -104,8 +107,8 @@ const PaymentsDemoRoot = ({ pathSetter }) => {
 // -----------------------------------------------------------
 // --- Componente del Formulario de Registro (RegistrationForm) ---
 // -----------------------------------------------------------
-const RegistrationForm = ({ pathSetter }) => {
-  const [formError, setFormError] = useState(null);
+const RegistrationForm = ({ pathSetter }:any) => {
+  const [formError, setFormError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [alreadyRegistered, setAlreadyRegistered] = useState(false);
 
@@ -123,7 +126,7 @@ const RegistrationForm = ({ pathSetter }) => {
     pathSetter('/');
   };
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
     const checked = type === 'checkbox' ? e.target.checked : undefined;
 
@@ -133,7 +136,7 @@ const RegistrationForm = ({ pathSetter }) => {
     }));
   };
 
-  const isNumeric = (str) => /^\d+$/.test(str);
+  const isNumeric = (str:string) => /^\d+$/.test(str);
 
   // 1. EFECTO: Simulación de verificación para evitar recarga
   useEffect(() => {
@@ -145,7 +148,7 @@ const RegistrationForm = ({ pathSetter }) => {
   }, []);
 
   // 2. FUNCIÓN DE ENVÍO (Llama directamente a la API)
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
     setFormError(null);
 
@@ -198,12 +201,12 @@ const RegistrationForm = ({ pathSetter }) => {
       localStorage.setItem('statusMessage', 'Cuenta bancaria registrada exitosamente.');
       pathSetter('/registro-cuenta/payment'); // Navega a PaymentSuccessPage
     } catch (error) {
-      console.error('❌ Error en el flujo de registro:', error.message);
+      /*console.error('❌ Error en el flujo de registro:', error.message);
       const displayError =
         error.message.includes('duplicado') || error.message.includes('Duplicate account number')
           ? 'El número de cuenta bancaria ya ha sido registrado. Por favor, verifica tus datos.'
           : `Error al procesar la solicitud: ${error.message}`;
-      setFormError(displayError);
+      setFormError(displayError);*/
     } finally {
       setLoading(false);
     }
