@@ -381,7 +381,8 @@ if (currentView === 'bankAccountRegister') {
 
             <button
 
-              onClick={() => router.push('/facturas')} // Usar router.push
+              //onClick={() => router.push('/facturas')} // Usar router.push
+              onClick={() => router.push('/facturas')}
 
               className="w-full bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-center gap-4 group"
 
