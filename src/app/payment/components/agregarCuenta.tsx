@@ -3,12 +3,12 @@
 import React, { useState, useEffect, FormEvent } from 'react';
 import { ChangeEvent } from 'react';
 
-const DEMO_FIXER_ID = '65f3f23f4a6b9645f0c98765';
+// FIX: Eliminada la variable DEMO_FIXER_ID estática
 const API_BASE_URL = '/api';
 
 type PathSetter = (path: string) => void;
 
-const PaymentSuccessPage = ({ onCloseAll }: { onCloseAll?: () => void }) => {
+const PaymentSuccessPage = ({ onCloseAll, fixerId }: { onCloseAll?: () => void; fixerId: string }) => {
   const [statusMessage, setStatusMessage] = useState('Cuenta bancaria registrada exitosamente.');
 
   useEffect(() => {
@@ -43,8 +43,8 @@ const PaymentSuccessPage = ({ onCloseAll }: { onCloseAll?: () => void }) => {
         </svg>
         <h2 className="text-3xl font-bold text-gray-800">¡Registro Exitoso!</h2>
         <p className="text-lg text-gray-600">
-          Tu cuenta bancaria ha sido registrada en la base de datos con el ID temporal:{' '}
-          <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{DEMO_FIXER_ID}</span>.
+          Tu cuenta bancaria ha sido registrada en la base de datos con el ID del fixer:{' '}
+          <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{fixerId}</span>.
         </p>
         <div className="p-3 bg-blue-50 text-blue-700 rounded-lg border border-blue-200 text-sm">
           {statusMessage || 'Redirigiendo al Demo de Pagos...'}
@@ -63,11 +63,13 @@ const PaymentSuccessPage = ({ onCloseAll }: { onCloseAll?: () => void }) => {
 const RegistrationForm = ({ 
     pathSetter, 
     onCloseAll, 
-    mode = 'register'
+    mode = 'register',
+    fixerId // 👈 ¡NUEVA PROP!
 }: { 
     pathSetter: PathSetter; 
     onCloseAll?: () => void;
-    mode?: 'register' | 'delete'
+    mode?: 'register' | 'delete';
+    fixerId: string; // 👈 ¡TIPO DE LA NUEVA PROP!
 }) => {
   const [formError, setFormError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -186,7 +188,8 @@ const RegistrationForm = ({
     setLoading(true);
     setDeleteError(null);
     try {
-        const response = await fetch(`${API_BASE_URL}/bank-accounts/${DEMO_FIXER_ID}`, {
+        // FIX: Usar la prop fixerId para DELETE
+        const response = await fetch(`${API_BASE_URL}/bank-accounts/${fixerId}`, {
             method: 'DELETE',
         });
 
@@ -263,7 +266,8 @@ const RegistrationForm = ({
     setLoading(true);
 
     const dataToSend = {
-      fixerId: DEMO_FIXER_ID,
+      // FIX: Usar la prop fixerId para POST
+      fixerId: fixerId,
       accountNumber: formData.numeroCuenta,
       bankName: formData.banco,
       nameFixer: cleanNombre,
@@ -308,7 +312,7 @@ const RegistrationForm = ({
                     ¿Eliminar Cuenta Bancaria?
                 </h2>
                 <p className="text-lg text-gray-600">
-                    Esta acción eliminará la cuenta asociada al ID: <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{DEMO_FIXER_ID}</span>.
+                    Esta acción eliminará la cuenta asociada al ID: <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{fixerId}</span>.
                     <br/> Tu estado de cuenta volverá a Sin Cuenta Bancaria (SCB).
                 </p>
                 {deleteError && (
@@ -400,7 +404,7 @@ const RegistrationForm = ({
                 onChange={handleChange}
                 placeholder="Nombre Apellido Apellido"
                 className={`w-full border p-2.5 rounded-lg focus:ring-4 focus:ring-blue-100 transition-colors text-gray-900 
-                    ${fieldErrors.nombreTitular ? 'border-red-500' : 'border-gray-300 focus:border-blue-500'}`}
+                  ${fieldErrors.nombreTitular ? 'border-red-500' : 'border-gray-300 focus:border-blue-500'}`}
                 required
                 onKeyPress={(e) => {
                   const char = e.key;
@@ -598,16 +602,19 @@ const RegistrationForm = ({
   );
 };
 
-const App = ({ onClose, mode = 'register' }: { onClose?: () => void; mode?: 'register' | 'delete' }) => { 
+// FIX: Recibir fixerId como prop en el componente App
+const App = ({ onClose, mode = 'register', fixerId }: { onClose?: () => void; mode?: 'register' | 'delete'; fixerId: string }) => { 
   const [path, setPath] = useState('/agregarCuenta');
 
   const renderContent = () => {
     switch (path) {
+      // FIX: Pasar fixerId al componente SuccessPage
       case '/agregarCuenta/payment':
-        return <PaymentSuccessPage onCloseAll={onClose} />;
+        return <PaymentSuccessPage onCloseAll={onClose} fixerId={fixerId} />;
       case '/agregarCuenta':
       default:
-        return <RegistrationForm pathSetter={setPath} onCloseAll={onClose} mode={mode} />;
+        // FIX: Pasar fixerId al RegistrationForm
+        return <RegistrationForm pathSetter={setPath} onCloseAll={onClose} mode={mode} fixerId={fixerId} />; 
     }
   };
 
