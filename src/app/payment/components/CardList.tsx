@@ -1,19 +1,32 @@
+//klever
 'use client';
 import { useEffect, useState } from 'react';
 import AddCardModal from './AddCardModal';
 import '../../../app/globals.css';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function CardList({ requesterId, fixerId, jobId, amount, onPaymentSuccess }) {
+export default function CardList({
+  requesterId,
+  fixerId,
+  userId,
+  jobId,
+  amount,
+  onPaymentSuccess,
+  payerType = 'requester',
+  transferDirection,
+}) {
   const [cards, setCards] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [processingCardId, setProcessingCardId] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [confirmModal, setConfirmModal] = useState(null); // card a pagar
 
+  const payerId = userId;
+
   const fetchCards = async () => {
+    if (!payerId) return; // evita hacer fetch con userId inválido
     try {
-      const res = await fetch(`http://localhost:4000/api/cards?userId=${requesterId}`);
+      const res = await fetch(`http://localhost:4000/api/cards?userId=${payerId}`);
       if (!res.ok) throw new Error('Error fetching cards');
       const data = await res.json();
       setCards(data);
@@ -23,8 +36,10 @@ export default function CardList({ requesterId, fixerId, jobId, amount, onPaymen
   };
 
   useEffect(() => {
-    fetchCards();
-  }, []);
+    if (payerId) fetchCards();
+  }, [payerId]);
+
+  console.log('payerId:', payerId);
 
   const handleCardAdded = async ({ payment, cardSaved }) => {
     await fetchCards();
@@ -47,16 +62,30 @@ export default function CardList({ requesterId, fixerId, jobId, amount, onPaymen
     setConfirmModal(null);
 
     try {
+      let paymentPayload = {
+        amount,
+        cardId: card._id,
+      };
+
+      if (transferDirection === 'requesterToFixer') {
+        paymentPayload.requesterId = requesterId;
+        paymentPayload.fixerId = fixerId;
+        paymentPayload.jobId = jobId; // SOLO para este caso agregas jobId
+      } else if (transferDirection === 'fixerToServineo') {
+        paymentPayload.requesterId = userId; // el fixer es el que paga
+        paymentPayload.fixerId = '690c1a08f32ebc5be9c5707c'; // id fijo Servineo
+        // NO enviar jobId aquí porque es recarga
+        paymentPayload.operationType = 'recarga-wallet'; // opcional, si backend lo usa
+      } else {
+        alert('Dirección de transferencia inválida');
+        setProcessingCardId(null);
+        return;
+      }
+
       const paymentRes = await fetch('http://localhost:4000/api/createpayment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          requesterId,
-          fixerId,
-          jobId,
-          cardId: card._id,
-          amount,
-        }),
+        body: JSON.stringify(paymentPayload),
       });
 
       const paymentData = await paymentRes.json();
@@ -196,12 +225,14 @@ export default function CardList({ requesterId, fixerId, jobId, amount, onPaymen
       {/* Modal agregar tarjeta */}
       {showModal && (
         <AddCardModal
-          userId={requesterId}
+          userId={payerId}
           fixerId={fixerId}
           jobId={jobId}
+          servineoId="690c1a08f32ebc5be9c5707c" // por ejemplo, el ID fijo de Servineo
           amount={amount}
           onClose={() => setShowModal(false)}
           onCardAdded={handleCardAdded}
+          transferDirection={transferDirection} // 👈 AGREGA ESTO
         />
       )}
 

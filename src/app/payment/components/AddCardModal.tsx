@@ -1,9 +1,19 @@
+//
 'use client';
 import { useState, useEffect } from 'react';
 import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function AddCardModal({ userId, fixerId, jobId, amount, onClose, onCardAdded }) {
+export default function AddCardModal({
+  userId,
+  fixerId,
+  servineoId,
+  jobId,
+  amount,
+  onClose,
+  onCardAdded,
+  transferDirection,
+}) {
   const stripe = useStripe();
   const elements = useElements();
   const [saveCard, setSaveCard] = useState(false);
@@ -11,12 +21,14 @@ export default function AddCardModal({ userId, fixerId, jobId, amount, onClose, 
   const [errorMessage, setErrorMessage] = useState('');
   const [cardHolder, setCardHolder] = useState('');
   const [isValidHolder, setIsValidHolder] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState(''); //jhoel solucion de bug mensajes.
 
+  //klever soluciona de bug Ñ y caracteres especiales
   useEffect(() => {
     const regex = /^(?=.*[a-zA-ZñÑáéíóúÁÉÍÓÚ])[a-zA-ZñÑáéíóúÁÉÍÓÚ\s]{3,50}$/;
     setIsValidHolder(regex.test(cardHolder.trim()));
   }, [cardHolder]);
+  //fin
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -46,8 +58,12 @@ export default function AddCardModal({ userId, fixerId, jobId, amount, onClose, 
       });
       if (error) throw new Error(error.message);
 
+      // Aquí paymentMethod.id es lo que debes enviar al backend
+      console.log('PaymentMethod creado:', paymentMethod.id);
+
       let cardId = null;
       if (saveCard) {
+        console.log('userId:', userId);
         const cardRes = await fetch('http://localhost:4000/api/cardscreate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -63,18 +79,36 @@ export default function AddCardModal({ userId, fixerId, jobId, amount, onClose, 
         cardId = savedCard._id;
       }
 
+      //jhoel
+      const paymentPayload = {
+        cardId: cardId || null,
+        paymentMethodId: saveCard ? undefined : paymentMethod.id,
+        amount,
+        jobId,
+      };
+      console.log('transferDirection recibido:', transferDirection);
+      if (transferDirection === 'requesterToFixer') {
+        paymentPayload.requesterId = userId;
+        paymentPayload.fixerId = fixerId;
+      } else if (transferDirection === 'fixerToServineo') {
+        paymentPayload.requesterId = userId; // fixer paga
+        paymentPayload.fixerId = servineoId; // o null, o un id fijo que identifique a Servineo
+        paymentPayload.operationType = 'recarga-wallet'; // ⚡ agregar esto
+      }
+      console.log('transferDirection recibido:', transferDirection);
+
+      console.log('paymentPayload:', paymentPayload);
+
+      if (transferDirection !== 'requesterToFixer' && transferDirection !== 'fixerToServineo') {
+        throw new Error('Dirección de transferencia inválida: ' + transferDirection);
+      }
+
       const paymentRes = await fetch('http://localhost:4000/api/createpayment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          requesterId: userId,
-          fixerId,
-          jobId,
-          cardId: cardId || null,
-          paymentMethodId: saveCard ? undefined : paymentMethod.id,
-          amount,
-        }),
+        body: JSON.stringify(paymentPayload),
       });
+
       const paymentData = await paymentRes.json();
       if (!paymentRes.ok) throw new Error(paymentData.error || 'Error al crear el pago');
 
