@@ -113,7 +113,7 @@ export default function PaymentMethodUI({
         setShowNotification(true);
       }
 
-    } catch (e: any) {
+    } catch (e: unknown | null) {
       console.error("❌ [REQUESTER] Error:", e);
       setErr(e.message || "No se pudo cargar el resumen");
     } finally {
@@ -196,7 +196,7 @@ export default function PaymentMethodUI({
       await loadSummary();
       setShowNotification(true);
 
-    } catch (e: any) {
+    } catch (e: unknown | null) {
       console.error("❌ [REQUESTER] Error regenerando:", e);
       setErr(e.message || "Error al regenerar el código");
     } finally {
@@ -274,7 +274,7 @@ export default function PaymentMethodUI({
 
   // Vista inicial (REQUESTER)
   return (
-    <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex items-center justify-center z-2000">
       {/* Fondo claro (principal): #F9FAFB */}
       <div className="bg-[#F9FAFB] w-full max-w-2xl mx-4 rounded-lg shadow-xl">
         {/* Header */}

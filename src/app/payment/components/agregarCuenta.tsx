@@ -103,8 +103,8 @@ const RegistrationForm = ({
     let processedValue = value;
 
     if (name === 'nombreTitular') {
-        let filteredValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
-        let rawValue = filteredValue.toLowerCase();
+        const filteredValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+        const rawValue = filteredValue.toLowerCase();
         processedValue = rawValue.replace(/(^|\s)\S/g, (char) => char.toUpperCase());
     } 
     else if (name === 'identificationSuffix') {
@@ -203,7 +203,7 @@ const RegistrationForm = ({
             onCloseAll();
         }
 
-    } catch (error: any) {
+    } catch (error: unknown | null) {
         console.error('Error al eliminar la cuenta:', error);
         setDeleteError(`Error al eliminar la cuenta: ${error.message || 'Error desconocido.'}`);
     } finally {
@@ -288,7 +288,7 @@ const RegistrationForm = ({
       localStorage.setItem('fix_bank_status', 'CCB');
       localStorage.setItem('statusMessage', 'Cuenta bancaria registrada exitosamente.');
       pathSetter('/agregarCuenta/payment');
-    } catch (error: any) {
+    } catch (error: unknown | null) {
       console.error('Error en el flujo de registro:', error?.message);
       const displayError =
         error?.message?.includes('duplicado') || error?.message?.includes('Duplicate account number')

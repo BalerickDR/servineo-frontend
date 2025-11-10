@@ -86,7 +86,7 @@ export default function AddCardModal({
 
       let cardId = null;
       if (saveCard) {
-        const cardRes = await fetch('http://localhost:4000/api/cardscreate', {
+        const cardRes = await fetch('https://servineo-backend-m68a.onrender.com/api/cardscreate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -101,7 +101,7 @@ export default function AddCardModal({
         cardId = savedCard._id;
       }
 
-      const paymentRes = await fetch('http://localhost:4000/api/createpayment', {
+      const paymentRes = await fetch('https://servineo-backend-m68a.onrender.com/api/createpayment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

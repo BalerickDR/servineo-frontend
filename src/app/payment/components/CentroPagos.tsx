@@ -9,9 +9,9 @@ const CentroDePagos = () => {
 
   const searchParams = useSearchParams(); 
 
-  const [fixerData, setFixerData] = useState<any>(null); 
+  const [fixerData, setFixerData] = useState<unknown | null>(null); 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
     const fixerIdFromUrl = searchParams.get('fixerId');
@@ -55,7 +55,7 @@ const CentroDePagos = () => {
       } else {
         throw new Error(result.error || 'Error desconocido');
       }
-    } catch (err: any) {
+    } catch (err: unknown | null) {
       console.error('❌ Error fetching fixer data:', err);
       setError(err instanceof Error ? err.message : 'Error desconocido');
       
@@ -168,7 +168,7 @@ const CentroDePagos = () => {
             
             {/* <-- CAMBIO 8: Actualizar el onClick del botón Fixer Wallet --> */}
             <button
-              onClick={() => router.push(`/payment/FixerWallet?fixerId=${fixerData.fixerId}`)}
+              onClick={() => router.push(`/payment/pages/FixerWallet?fixerId=${fixerData.fixerId}`)}
               disabled={!fixerData?.fixerId} // Deshabilitar si no hay fixerId
               className="w-full bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-center gap-4 group disabled:opacity-50"
             >
@@ -183,9 +183,11 @@ const CentroDePagos = () => {
             </button>
 
             <button 
-              onClick={() => router.push('/cuenta-bancaria')} 
-              className="w-full bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-center gap-4 group"
-            >
+  // RUTA CORREGIDA: 
+  onClick={() => router.push(`/cuenta-bancaria?fixerId=${fixerData.fixerId}`)} 
+  disabled={!fixerData?.fixerId} 
+  className="w-full bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-center gap-4 group disabled:opacity-50"
+>
               <div className="bg-cyan-100 p-3 rounded-xl group-hover:bg-cyan-200 transition-colors">
                 <Building2 className="text-cyan-600" size={28} />
               </div>

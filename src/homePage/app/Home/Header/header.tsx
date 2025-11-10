@@ -17,7 +17,7 @@ declare global {
     logout?: () => void;
     openEdit?: () => void;
     convertFixer?: () => void;
-    toggleMenu?: (e?: any) => void;
+    toggleMenu?: (e?: unknown | null) => void;
     closeMenu?: () => void;
     deviceId?: string;
   }
@@ -44,7 +44,7 @@ const Header = () => {
   useEffect(() => {
     const checkAuth = () => {
       const usersStore = JSON.parse(localStorage.getItem('booka_users') || '{}');
-      const deviceId = (window as any).deviceId || 'dev-default';
+      const deviceId = (window as unknown | null).deviceId || 'dev-default';
       const session = usersStore.sessions?.[deviceId];
       setIsAuthenticated(!!session?.loggedIn);
       setIsLoggedIn(!!session?.loggedIn);
@@ -59,7 +59,7 @@ const Header = () => {
   // ========= LÓGICA DE PERFIL (inicialización y listeners) =========
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const win = window as any;
+    const win = window as unknown | null;
     if (!win.__booka_userProfileInitialized) {
       if (typeof initUserProfileLogic === 'function') {
         initUserProfileLogic();
@@ -68,7 +68,7 @@ const Header = () => {
     }
 
     const deviceId = localStorage.getItem('booka_device_id') || win.deviceId || 'dev-default';
-    let currentUser: any = mockUser;
+    let currentUser: unknown | null = mockUser;
     try {
       const usersStore = JSON.parse(localStorage.getItem('booka_users') || '{}') || {};
       if (usersStore.sessions && usersStore.sessions[deviceId]) {
@@ -112,9 +112,9 @@ const Header = () => {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const win = window as any;
+    const win = window as unknown | null;
 
-    win.toggleMenu = (e?: any) => {
+    win.toggleMenu = (e?: unknown | null) => {
       e?.stopPropagation?.();
       setIsMenuOpen((prev) => !prev);
     };
@@ -159,6 +159,8 @@ const Header = () => {
     setTimeout(() => window.convertFixer?.(), 150);
   };
 
+ 
+
   const handleAyudaClick = (e: React.MouseEvent<HTMLElement>) => {
     e.preventDefault();
     if (!isAuthenticated) {
@@ -180,7 +182,7 @@ const Header = () => {
         window.isAuthenticated = !!detail.loggedIn;
       } else {
         const stored = JSON.parse(localStorage.getItem('booka_users') || '{}');
-        const deviceId = (window as any).deviceId || localStorage.getItem('booka_device_id');
+        const deviceId = (window as unknown | null).deviceId || localStorage.getItem('booka_device_id');
         const session = stored.sessions?.[deviceId || ''] || null;
         setUser(session || mockUser);
         setIsAuthenticated(!!session?.loggedIn);
@@ -292,7 +294,7 @@ const Header = () => {
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
-                  handleAyudaClick(e as any);
+                  handleAyudaClick(e as unknown | null);
                 }
               }}
             >
@@ -315,10 +317,10 @@ const Header = () => {
             ) : (
               <div className="relative">
                 <button
-                  onClick={(e) => (window as any).toggleMenu?.(e)}
+                  onClick={(e) => (window as unknown | null).toggleMenu?.(e)}
                   className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-gray-100 transition"
                   aria-label="Abrir menú de perfil"
-                  ref={iconRef as any}
+                  ref={iconRef as unknown | null}
                 >
                   {user.photo?.startsWith('data:') ? (
                     <img src={user.photo} alt="Avatar" width={32} height={32} className="rounded-full" />
@@ -370,7 +372,7 @@ const Header = () => {
               ) : (
                 <div className="relative">
                   <button
-                    onClick={(e) => (window as any).toggleMenu?.(e)}
+                    onClick={(e) => (window as unknown | null).toggleMenu?.(e)}
                     className="flex items-center gap-1 px-2 py-1.5 rounded-md text-sm bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-sm font-medium"
                     aria-label="Abrir menú de perfil"
                   >
@@ -462,7 +464,7 @@ const Header = () => {
         {/* Botón 2: Centro de Pagos (Se muestra si el rol es 'fixer') */}
         {user?.role === 'fixer' && (
           <Link 
-            href={`/centro-de-pagos?fixerId=${user._id}`}
+            href={`/payment/pages/centro-de-pagos?fixerId=${user._id}`}
             id="centroPagosBtn" 
             className="menu-item"
             onClick={() => window.closeMenu?.()}
@@ -473,6 +475,7 @@ const Header = () => {
 
         {/* Botón 3: Convertirse en Fixer (Se muestra si el rol NO es 'fixer') */}
         {user?.role !== 'fixer' && (
+          <>
           <div 
             id="convertFixer"
             className="menu-item" 
@@ -480,9 +483,22 @@ const Header = () => {
           >
             Convertirse en Fixer
           </div>
+
+           <Link 
+            href={`/trabajos`}
+            id="TrabajosRequesterBtn" 
+            className="menu-item"
+            onClick={() => window.closeMenu?.()}
+          >
+           Trabajos Requester
+          </Link>
+          
+          </>
+          
+
         )}
-        
-        {/* --- FIN DE LA LÓGICA --- */}
+          
+     {/* --- FIN DE LA LÓGICA --- */}
 
         {/* Botón 4: Cerrar Sesión */}
         <div className="menu-item" onClick={onLogout}>
