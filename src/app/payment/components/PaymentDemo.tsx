@@ -38,8 +38,8 @@ export default function PaymentDemo() {
   const [modalMode, setModalMode] = useState<'register' | 'delete'>('register');
 
   // Datos para pago con tarjeta
-  const requesterId = '68ed47b64ed596d659c1ed92';
-  const fixerId = '68ef1be7be38c7f1c3c2c78c';
+  const requesterId = '68ed47b64ed596d659c1ed8f';
+  const fixerId = '68ef1be7be38c7f1c3c2c78b';
   const jobId = '68ea51ee0d80087528ad803f';
 
   useEffect(() => {
@@ -270,10 +270,7 @@ export default function PaymentDemo() {
                 <CardList
                   requesterId={requesterId}
                   fixerId={fixerId}
-                  userId={requesterId}  // Asegúrate de pasar el userId aquí
                   jobId={jobId}
-                  payerType="requester"
-                  transferDirection="requesterToFixer" // 👈 para pago de servicio
                   amount={selectedTrabajo?.monto || 0}
                   onPaymentSuccess={() => handleCloseCardPayment(true)}
                 />

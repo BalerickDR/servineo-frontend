@@ -43,7 +43,7 @@ export default function FixerWalletApp() {
   //const fixerId = params.get('fixerId');
 
   //tarjeta
-  const fixerId = '68ef1be7be38c7f1c3c2c78c'; // quien paga (fixer)
+  const fixerId = '6910e729a571aecd3e567d9e'; // quien paga (fixer) esta en colleccion users
   const servineoId = '690c1a08f32ebc5be9c5707c'; // el ID que representa a Servineo (uien recibe (Servineo))
 
   //qr
@@ -367,10 +367,8 @@ export default function FixerWalletApp() {
 
                   <CardList
                     userId={fixerId} // quien paga, el fixer en este caso
-                    fixerId={servineoId} // quien recibe, Servineo
+                    fixerId={fixerId} // quien recibe, Servineo
                     amount={Number(amount)} // monto convertido a número
-                    payerType="fixer" // tipo de pagador es fixer para recarga
-                    transferDirection="fixerToServineo" // dirección para recarga
                     onPaymentSuccess={() => {
                       handleCloseCardPayment(true);
                       alert('Recarga realizada con éxito');

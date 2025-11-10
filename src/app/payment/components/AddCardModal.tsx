@@ -1,19 +1,42 @@
-//
 'use client';
 import { useState, useEffect } from 'react';
 import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function AddCardModal({
-  userId,
-  fixerId,
-  servineoId,
-  jobId,
-  amount,
-  onClose,
-  onCardAdded,
-  transferDirection,
-}) {
+// --- INICIO DE LA CORRECCIÓN ---
+
+// 1. Define un tipo para el payload de 'onCardAdded'
+interface OnCardAddedPayload {
+  payment: {
+    _id: string;
+    amount: number;
+    card: { _id: string } | null;
+  };
+  cardSaved: boolean;
+}
+
+// 2. Define la interfaz para las props de ESTE modal (AddCardModal)
+interface AddCardModalProps {
+  userId: string;
+  fixerId: string;
+  jobId: string;
+  amount: number;
+  onClose: () => void;
+  onCardAdded: (payload: OnCardAddedPayload) => void; 
+}
+// --- FIN DE LA CORRECCIÓN ---
+
+
+// 3. APLICA LA INTERFAZ Y DESESTRUCTURA LAS PROPS
+export default function AddCardModal({ 
+  userId, 
+  fixerId, 
+  jobId, 
+  amount, 
+  onClose, 
+  onCardAdded 
+}: AddCardModalProps) { // <-- ESTA LÍNEA ES LA CORRECTA
+
   const stripe = useStripe();
   const elements = useElements();
   const [saveCard, setSaveCard] = useState(false);
@@ -21,16 +44,14 @@ export default function AddCardModal({
   const [errorMessage, setErrorMessage] = useState('');
   const [cardHolder, setCardHolder] = useState('');
   const [isValidHolder, setIsValidHolder] = useState(false);
-  const [successMessage, setSuccessMessage] = useState(''); //jhoel solucion de bug mensajes.
+  const [successMessage, setSuccessMessage] = useState('');
 
-  //klever soluciona de bug Ñ y caracteres especiales
   useEffect(() => {
     const regex = /^(?=.*[a-zA-ZñÑáéíóúÁÉÍÓÚ])[a-zA-ZñÑáéíóúÁÉÍÓÚ\s]{3,50}$/;
     setIsValidHolder(regex.test(cardHolder.trim()));
   }, [cardHolder]);
-  //fin
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!stripe || !elements) {
       setErrorMessage('Stripe aún no está listo, espera unos segundos.');
@@ -58,17 +79,18 @@ export default function AddCardModal({
       });
       if (error) throw new Error(error.message);
 
-      // Aquí paymentMethod.id es lo que debes enviar al backend
-      console.log('PaymentMethod creado:', paymentMethod.id);
+
+
+    
+
 
       let cardId = null;
       if (saveCard) {
-        console.log('userId:', userId);
         const cardRes = await fetch('http://localhost:4000/api/cardscreate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            userId,
+            userId, // <-- Ahora 'userId' SÍ existe
             paymentMethodId: paymentMethod.id,
             saveCard,
             cardholderName: cardHolder,
@@ -79,36 +101,18 @@ export default function AddCardModal({
         cardId = savedCard._id;
       }
 
-      //jhoel
-      const paymentPayload = {
-        cardId: cardId || null,
-        paymentMethodId: saveCard ? undefined : paymentMethod.id,
-        amount,
-        jobId,
-      };
-      console.log('transferDirection recibido:', transferDirection);
-      if (transferDirection === 'requesterToFixer') {
-        paymentPayload.requesterId = userId;
-        paymentPayload.fixerId = fixerId;
-      } else if (transferDirection === 'fixerToServineo') {
-        paymentPayload.requesterId = userId; // fixer paga
-        paymentPayload.fixerId = servineoId; // o null, o un id fijo que identifique a Servineo
-        paymentPayload.operationType = 'recarga-wallet'; // ⚡ agregar esto
-      }
-      console.log('transferDirection recibido:', transferDirection);
-
-      console.log('paymentPayload:', paymentPayload);
-
-      if (transferDirection !== 'requesterToFixer' && transferDirection !== 'fixerToServineo') {
-        throw new Error('Dirección de transferencia inválida: ' + transferDirection);
-      }
-
       const paymentRes = await fetch('http://localhost:4000/api/createpayment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(paymentPayload),
+        body: JSON.stringify({
+          requesterId: userId, // <-- 'userId' SÍ existe
+          fixerId,
+          jobId,
+          cardId: cardId || null,
+          paymentMethodId: saveCard ? undefined : paymentMethod.id,
+          amount,
+        }),
       });
-
       const paymentData = await paymentRes.json();
       if (!paymentRes.ok) throw new Error(paymentData.error || 'Error al crear el pago');
 
@@ -131,9 +135,14 @@ export default function AddCardModal({
         setSuccessMessage('');
         onClose();
       }, 2000);
-    } catch (err) {
+
+    } catch (err: unknown) { 
       console.error(err);
-      setErrorMessage(err.message);
+      if (err instanceof Error) {
+        setErrorMessage(err.message);
+      } else {
+        setErrorMessage('Ocurrió un error inesperado.');
+      }
     } finally {
       setLoading(false);
     }
@@ -222,7 +231,7 @@ export default function AddCardModal({
         </form>
       </motion.div>
 
-      {/*  Modal de éxito */}
+      {/* Modal de éxito */}
       <AnimatePresence>
         {successMessage && (
           <motion.div

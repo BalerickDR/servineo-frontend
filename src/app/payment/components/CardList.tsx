@@ -1,32 +1,64 @@
-//klever
 'use client';
 import { useEffect, useState } from 'react';
 import AddCardModal from './AddCardModal';
 import '../../../app/globals.css';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function CardList({
-  requesterId,
-  fixerId,
-  userId,
-  jobId,
-  amount,
-  onPaymentSuccess,
-  payerType = 'requester',
-  transferDirection,
-}) {
-  const [cards, setCards] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [processingCardId, setProcessingCardId] = useState(null);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [confirmModal, setConfirmModal] = useState(null); // card a pagar
+// --- INICIO DE LA CORRECCIÓN ---
 
-  const payerId = userId;
+// 1. Definir la interfaz para las props del componente
+interface CardListProps {
+  requesterId: string;
+  fixerId: string;
+  jobId: string;
+  amount: number;
+  onPaymentSuccess: () => void;
+}
+
+// 2. Definir un tipo para la estructura de una tarjeta (basado en el uso)
+// Esto evita usar 'any' más adelante
+interface Card {
+  _id: string;
+  brand?: string;
+  last4: string;
+  expMonth: string | number;
+  expYear: string | number;
+  cardholderName?: string;
+  isDefault?: boolean;
+}
+
+// 3. Definir un tipo para el payload de onCardAdded
+interface CardAddedPayload {
+  payment: {
+    _id: string;
+    amount: number;
+    card: { _id: string } | null;
+  };
+  cardSaved: boolean;
+}
+
+// --- FIN DE LA CORRECCIÓN ---
+
+
+// 4. Aplicar la interfaz CardListProps a las props
+export default function CardList({ 
+  requesterId, 
+  fixerId, 
+  jobId, 
+  amount, 
+  onPaymentSuccess 
+}: CardListProps) {
+  
+  // 5. Aplicar el tipo Card al estado 'cards' y 'confirmModal'
+  const [cards, setCards] = useState<Card[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [processingCardId, setProcessingCardId] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [confirmModal, setConfirmModal] = useState<Card | null>(null); // card a pagar
 
   const fetchCards = async () => {
-    if (!payerId) return; // evita hacer fetch con userId inválido
     try {
-      const res = await fetch(`http://localhost:4000/api/cards?userId=${payerId}`);
+      const res = await fetch(`http://localhost:4000/api/cards?userId=${requesterId}`);
       if (!res.ok) throw new Error('Error fetching cards');
       const data = await res.json();
       setCards(data);
@@ -36,12 +68,11 @@ export default function CardList({
   };
 
   useEffect(() => {
-    if (payerId) fetchCards();
-  }, [payerId]);
+    fetchCards();
+  }, []); // El array vacío está bien si fetchCards no depende de props
 
-  console.log('payerId:', payerId);
-
-  const handleCardAdded = async ({ payment, cardSaved }) => {
+  // 6. Aplicar el tipo al payload de 'handleCardAdded'
+  const handleCardAdded = async ({ payment, cardSaved }: CardAddedPayload) => {
     await fetchCards();
     setShowModal(false);
 
@@ -52,40 +83,28 @@ export default function CardList({
     showSuccessModal(message, onPaymentSuccess);
   };
 
-  const confirmPay = (card) => {
+  // 7. Aplicar el tipo Card a la función 'confirmPay'
+  const confirmPay = (card: Card) => {
     setConfirmModal(card);
   };
 
-  const handlePayWithCard = async (card) => {
+  // 8. Aplicar el tipo Card a la función 'handlePayWithCard'
+  const handlePayWithCard = async (card: Card) => {
     if (processingCardId) return;
     setProcessingCardId(card._id);
     setConfirmModal(null);
 
     try {
-      let paymentPayload = {
-        amount,
-        cardId: card._id,
-      };
-
-      if (transferDirection === 'requesterToFixer') {
-        paymentPayload.requesterId = requesterId;
-        paymentPayload.fixerId = fixerId;
-        paymentPayload.jobId = jobId; // SOLO para este caso agregas jobId
-      } else if (transferDirection === 'fixerToServineo') {
-        paymentPayload.requesterId = userId; // el fixer es el que paga
-        paymentPayload.fixerId = '690c1a08f32ebc5be9c5707c'; // id fijo Servineo
-        // NO enviar jobId aquí porque es recarga
-        paymentPayload.operationType = 'recarga-wallet'; // opcional, si backend lo usa
-      } else {
-        alert('Dirección de transferencia inválida');
-        setProcessingCardId(null);
-        return;
-      }
-
       const paymentRes = await fetch('http://localhost:4000/api/createpayment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(paymentPayload),
+        body: JSON.stringify({
+          requesterId,
+          fixerId,
+          jobId,
+          cardId: card._id,
+          amount,
+        }),
       });
 
       const paymentData = await paymentRes.json();
@@ -109,7 +128,8 @@ export default function CardList({
     }
   };
 
-  const showSuccessModal = (msg, onComplete) => {
+  // 9. Tipar los parámetros de 'showSuccessModal'
+  const showSuccessModal = (msg: string, onComplete: () => void) => {
     setSuccessMessage(msg);
     setTimeout(() => {
       setSuccessMessage('');
@@ -118,15 +138,15 @@ export default function CardList({
   };
 
   // 🎨 Paleta más realista y oscura
-  const cardBackgrounds = {
+  const cardBackgrounds: { [key: string]: string } = { // Tipar el objeto
     visa: 'from-blue-950 via-blue-800 to-blue-700',
     mastercard: 'from-red-900 via-orange-800 to-yellow-700',
     amex: 'from-cyan-900 via-teal-800 to-teal-700',
     default: 'from-gray-800 via-gray-700 to-gray-600',
   };
 
-  const getCardBackground = (brand) => {
-    const key = brand?.toLowerCase();
+  const getCardBackground = (brand: string | undefined) => { // Tipar 'brand'
+    const key = brand?.toLowerCase() || 'default';
     return cardBackgrounds[key] || cardBackgrounds.default;
   };
 
@@ -158,7 +178,8 @@ export default function CardList({
                 y: -5,
                 boxShadow: '0px 8px 25px rgba(0,0,0,0.3)',
               }}
-              className={`relative rounded-2xl shadow-2xl p-6 text-black bg-[#1AA7ED]`}
+              // He quitado getCardBackground para simplificar, puedes añadirlo si quieres
+              className={`relative rounded-2xl shadow-2xl p-6 text-black bg-[#1AA7ED]`} 
             >
               {/* Reflejo */}
               <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent rounded-2xl pointer-events-none"></div>
@@ -225,14 +246,12 @@ export default function CardList({
       {/* Modal agregar tarjeta */}
       {showModal && (
         <AddCardModal
-          userId={payerId}
+          userId={requesterId}
           fixerId={fixerId}
           jobId={jobId}
-          servineoId="690c1a08f32ebc5be9c5707c" // por ejemplo, el ID fijo de Servineo
           amount={amount}
           onClose={() => setShowModal(false)}
           onCardAdded={handleCardAdded}
-          transferDirection={transferDirection} // 👈 AGREGA ESTO
         />
       )}
 
