@@ -5,7 +5,7 @@ import {
   getPaymentSummaryById,
   getLastPaymentSummaryByJob,
   confirmPayment,
-} from "../lib/payments";
+} from "../../components/payment/payments";
 
 type Trabajo = { id: string; monto: number; estado: "Sin Pagar" | "Pagado" };
 
