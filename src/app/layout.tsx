@@ -1,4 +1,10 @@
 import type { Metadata } from 'next';
+import { Geist, Geist_Mono } from 'next/font/google';
+import "./globals.css";
+import { roboto } from './fonts';
+import 'leaflet/dist/leaflet.css'
+import { ReduxProvider } from './redux/ReduxProvider';
+import TopMenu from '@/Components/Navigation/TopMenu';
 import { Roboto } from 'next/font/google';
 import './globals.css';
 import 'leaflet/dist/leaflet.css';

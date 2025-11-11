@@ -8,7 +8,11 @@ module.exports = {
     './node_modules/some-external-library/**/*.js',
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors : {
+        
+      }
+    },
   },
   plugins: [],
 };
