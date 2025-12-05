@@ -33,7 +33,7 @@ export default function CardListFixer({ fixerId, amount, onRechargeSuccess, reca
 
  const fetchCards = async () => {
  try {
- const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/cards?userId=${fixerId}`);
+ const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/api/cards?userId=${fixerId}`);
  if (!res.ok) throw new Error('Error fetching cards');
  const data = await res.json();
  setCards(data);
@@ -64,7 +64,7 @@ export default function CardListFixer({ fixerId, amount, onRechargeSuccess, reca
             console.log(`💳 Recargando ${amount} BOB a la wallet del fixer ${fixerId} con token reCAPTCHA.`);
 
             // 🔑 CRÍTICO: Incluir el recaptchaToken en el cuerpo de la solicitud
-            const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/wallet/update`, {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/api/wallet/update`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 

@@ -59,7 +59,7 @@ export interface Invoice {
   Total: number;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL;
 
 const fetchInvoices = async (): Promise<Invoice[]> => {
   // === MODIFICACIÓN CLAVE: Obtener el ID y agregarlo a la URL ===

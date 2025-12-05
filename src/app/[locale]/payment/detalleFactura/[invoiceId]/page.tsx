@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import InvoiceDetail, { InvoiceDetailData } from '../../../../../Components/payment/InvoiceDetail';
 import { useParams } from 'next/navigation';
 
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL;
 
 // Función auxiliar para obtener el ID del usuario
 const getRequesterId = () => {

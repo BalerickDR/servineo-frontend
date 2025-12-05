@@ -28,7 +28,7 @@ export default function TrabajosList({ userId }: TrabajosListProps) {
     const fetchJobs = async () => {
       try {
         console.log("📡 Obteniendo trabajos para el usuario:", userId);
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/jobs?userId=${userId}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/api/jobs?userId=${userId}`);
         if (!res.ok) throw new Error("Error al obtener trabajos");
         const data = await res.json();
         console.log("✅ Trabajos recibidos:", data);
