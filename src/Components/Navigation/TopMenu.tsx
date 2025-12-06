@@ -8,9 +8,17 @@ import { useGetUserByIdQuery } from '@/app/redux/services/userApi';
 import { skipToken } from '@reduxjs/toolkit/query';
 import { useDispatch, useSelector } from 'react-redux';
 import { setUser } from '@/app/redux/slice/userSlice';
+import { resetFilters } from '@/app/redux/slice/filterSlice';
 import type { IUser } from '@/types/user';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
+import NotificationSystem from '@/app/components/NotificationSystem';
+
+interface UserState {
+  user: IUser | null;
+  isAuthenticated: boolean;
+  loading: boolean;
+}
 
 interface RootState {
   user: { user: IUser | null };
@@ -28,7 +36,6 @@ export default function TopMenu() {
     } catch {}
     return fallbackText ?? localeDefault('Iniciar Sesión', 'Log in');
   };
-  
   const dispatch = useDispatch();
   const router = useRouter();
   const pathname = usePathname();
@@ -36,6 +43,7 @@ export default function TopMenu() {
   const user = useSelector((state: RootState) => state.user.user);
 
   // UI state
+  const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -57,6 +65,15 @@ export default function TopMenu() {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // Determine if we're in auth flow
+  const isInAuthFlow = () => {
+    if (typeof window === 'undefined') return false;
+    const authRoutes = ['/login', '/signUp'];
+    const isInAuthRoute = authRoutes.some((route) => pathname?.includes(route));
+    const authInProgress = sessionStorage.getItem('auth_in_progress') === 'true';
+    return isInAuthRoute || authInProgress;
+  };
 
   // NAV items
   const navItems =
@@ -148,7 +165,6 @@ export default function TopMenu() {
 
       if (raw && raw !== 'undefined') {
         const parsed: IUser = JSON.parse(raw);
-
         const normalized: IUser = {
           ...parsed,
           photo: parsed.photo || parsed.picture || parsed.url_photo || '',
@@ -164,7 +180,7 @@ export default function TopMenu() {
         setIsLogged(false);
         setUserId(null);
       }
-    } catch {
+    } catch (e) {
       localStorage.removeItem('servineo_user');
       dispatch(setUser(null));
       setIsLogged(false);
@@ -179,7 +195,6 @@ export default function TopMenu() {
 
         if (raw && raw !== 'undefined') {
           const parsed: IUser = JSON.parse(raw);
-
           const normalized: IUser = {
             ...parsed,
             photo: parsed.photo || parsed.picture || parsed.url_photo,
@@ -279,6 +294,28 @@ export default function TopMenu() {
     }
   }, [fetchedUser, dispatch]);
 
+  /* ---------- Handlers ---------- */
+
+  const logout = () => {
+    localStorage.removeItem('servineo_token');
+    localStorage.removeItem('servineo_user');
+    
+    try {
+      dispatch(resetFilters());
+    } catch (e) {
+      console.error('Error resetting job offers state on logout', e);
+    }
+    
+    try {
+      const path = window.location.pathname;
+      window.history.replaceState(null, '', path);
+    } catch (e) {
+      // ignore
+    }
+    
+    window.location.reload();
+  };
+
   const handleLogoClick = () => {
     if (typeof window === 'undefined') return;
     if (window.location.pathname === '/') {
@@ -294,13 +331,54 @@ export default function TopMenu() {
       const email = raw ? (JSON.parse(raw)?.email ?? '') : '';
       if (email) sessionStorage.setItem('prefill_email', email);
     } catch {}
-    localStorage.removeItem('servineo_token');
-    localStorage.removeItem('servineo_user');
-    dispatch(setUser(null));
-    setProfileMenuOpen(false);
-    setIsLogged(false);
-    router.push('/');
+    logout();
   };
+
+  if (!isClient) return null;
+
+  /* ---------- Content for Fixer Menu ---------- */
+  const renderFixerMenu = () => (
+    <>
+      <button
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={() => {
+          setProfileMenuOpen(false);
+          router.push('/fixer/dashboard');
+        }}
+        className="menuItem w-full text-left flex items-center gap-2"
+      >
+        <UserCircle className="h-4 w-4" />
+        Perfil de Fixer
+      </button>
+
+      <button
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={goToCentroDePagos}
+        className="menuItem w-full text-left flex items-center gap-2"
+      >
+        <Wallet className="h-4 w-4" />
+        Centro de Pagos
+      </button>
+
+      <button
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={goToConfirmarPagos}
+        className="menuItem w-full text-left flex items-center gap-2"
+      >
+        <ClipboardList className="h-4 w-4" />
+        Confirmar Pagos
+      </button>
+
+      <button
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={goToMisTrabajos}
+        className="menuItem w-full text-left flex items-center gap-2"
+      >
+        <Briefcase className="h-4 w-4" />
+        Mis Trabajos
+      </button>
+    </>
+  );
 
   /* ---------- Render ---------- */
   return (
@@ -313,6 +391,7 @@ export default function TopMenu() {
         role='banner'
       >
         <div className='w-full max-w-8xl mx-auto px-4 flex justify-between items-center h-20'>
+          {/* Logo */}
           <button
             ref={logoRef}
             onClick={handleLogoClick}
@@ -336,6 +415,7 @@ export default function TopMenu() {
             </span>
           </button>
 
+          {/* Desktop Nav */}
           <nav className='flex gap-6' role='navigation' aria-label='Menú principal'>
             {navItems.map((item) => (
               <Link
@@ -349,7 +429,19 @@ export default function TopMenu() {
             ))}
           </nav>
 
+          {/* Desktop Right */}
           <div className='flex items-center gap-4' id='tour-auth-buttons-desktop'>
+            
+            {/* Notification System Desktop */}
+            <div className="hidden lg:block">
+              <NotificationSystem
+                  userId={userId || undefined}
+                  userName={user?.name}
+                  isAuthenticated={isLogged}
+                  userRole={user?.role as 'fixer' | 'requester'}
+              />
+            </div>
+
             {!isClient ? (
               <div style={{ width: 100, height: 10 }} />
             ) : !isLogged ? (
@@ -372,7 +464,7 @@ export default function TopMenu() {
                 <button
                   ref={profileButtonRef}
                   onClick={() => setProfileMenuOpen((v) => !v)}
-                  className='flex items-center gap-2 cursor-pointer ml-[-20px] px-3 py-1 border border-gray-300 bg-white rounded-xl transition'
+                  className='flex items-center gap-2 cursor-pointer px-3 py-1 border border-gray-300 bg-white rounded-xl transition'
                 >
                   <img
                     src={userPhoto}
@@ -387,6 +479,7 @@ export default function TopMenu() {
                   </span>
                 </button>
 
+                {/* Profile dropdown Desktop */}
                 {profileMenuOpen && (
                   <div
                     ref={dropdownRef}
@@ -419,37 +512,7 @@ export default function TopMenu() {
 
                     <hr style={{ margin: '8px 0', opacity: 0.3 }} />
 
-                    {user?.role === 'fixer' ? (
-                      <>
-                        <Link
-                          href='/fixer/dashboard'
-                          onMouseDown={(e) => e.stopPropagation()}
-                          onClick={() => setProfileMenuOpen(false)}
-                          className='flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium bg-[var(--color-primary)] text-white hover:opacity-90 transition-opacity'
-                        >
-                          <UserCircle className='h-4 w-4' />
-                          Perfil de Fixer
-                        </Link>
-
-                        <button
-                          onMouseDown={(e) => e.stopPropagation()}
-                          onClick={goToCentroDePagos}
-                          className='menuItem w-full text-left'
-                        >
-                          <Wallet className='h-4 w-4 inline mr-2' />
-                          Centro de Pagos
-                        </button>
-
-                        <button
-                          onMouseDown={(e) => e.stopPropagation()}
-                          onClick={goToConfirmarPagos}
-                          className='menuItem w-full text-left'
-                        >
-                          <ClipboardList className='h-4 w-4 inline mr-2' />
-                          Confirmar Pagos
-                        </button>
-                      </>
-                    ) : (
+                    {user?.role !== 'fixer' && (
                       <>
                         <button
                           onMouseDown={(e) => e.stopPropagation()}
@@ -465,15 +528,6 @@ export default function TopMenu() {
 
                         <button
                           onMouseDown={(e) => e.stopPropagation()}
-                          onClick={goToMisTrabajos}
-                          className='menuItem w-full text-left'
-                        >
-                          <Briefcase className='h-4 w-4 inline mr-2' />
-                          Mis Trabajos
-                        </button>
-
-                        <button
-                          onMouseDown={(e) => e.stopPropagation()}
                           onClick={(e) => {
                             e.stopPropagation();
                             setProfileMenuOpen(false);
@@ -485,6 +539,9 @@ export default function TopMenu() {
                         </button>
                       </>
                     )}
+
+                    {/* MENÚ FIXER DESKTOP */}
+                    {user?.role === 'fixer' && renderFixerMenu()}
 
                     <button
                       onMouseDown={(e) => e.stopPropagation()}
@@ -506,7 +563,9 @@ export default function TopMenu() {
 
       {/* MOBILE/TABLET HEADER */}
       <div className='lg:hidden'>
+        {/* Barra superior */}
         <div className='flex items-center justify-between px-3 py-4 border-b border-gray-200 bg-white/95 backdrop-blur-sm fixed top-0 left-0 right-0 z-50'>
+          {/* Logo */}
           <button onClick={handleLogoClick} className='flex items-center gap-2 min-w-0'>
             <div className='relative overflow-hidden rounded-full shadow-md shrink-0'>
               <Image src='/es/img/icon.png' alt='Servineo' width={32} height={32} />
@@ -516,6 +575,7 @@ export default function TopMenu() {
             </span>
           </button>
 
+          {/* Auth Buttons */}
           {!isClient ? (
             <div style={{ width: 100, height: 10 }} />
           ) : !isLogged ? (
@@ -534,11 +594,23 @@ export default function TopMenu() {
               </Link>
             </div>
           ) : (
-            <>
+            <div className="flex items-center gap-2">
+              
+              {/* NOTIFICACIONES MÓVIL */}
+              <div className="block">
+                <NotificationSystem
+                  userId={userId || undefined}
+                  userName={user?.name}
+                  isAuthenticated={isLogged}
+                  userRole={user?.role as 'fixer' | 'requester'}
+                />
+              </div>
+
+              {/* Botón de perfil sin margen negativo */}
               <button
                 onClick={() => setProfileMenuOpen(!profileMenuOpen)}
                 ref={profileButtonRef}
-                className='flex items-center gap-2 cursor-pointer ml-[-20px] px-3 py-1 border border-gray-300 bg-white rounded-xl transition'
+                className='flex items-center gap-2 cursor-pointer px-3 py-1 border border-gray-300 bg-white rounded-xl transition'
               >
                 <img
                   src={userPhoto}
@@ -552,6 +624,8 @@ export default function TopMenu() {
                   {user?.name ?? fetchedUser?.name ?? 'Usuario'}
                 </span>
               </button>
+              
+              {/* Profile dropdown Mobile */}
               {profileMenuOpen && (
                 <div
                   ref={dropdownRef}
@@ -582,34 +656,7 @@ export default function TopMenu() {
 
                   <hr style={{ margin: '8px 0', opacity: 0.3 }} />
 
-                  {user?.role === 'fixer' ? (
-                    <>
-                      <Link
-                        href='/fixer/dashboard'
-                        onClick={() => setProfileMenuOpen(false)}
-                        className='flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium bg-[var(--color-primary)] text-white hover:opacity-90 transition-opacity'
-                      >
-                        <UserCircle className='h-4 w-4' />
-                        Perfil de Fixer
-                      </Link>
-
-                      <button
-                        onClick={goToCentroDePagos}
-                        className='menuItem w-full text-left'
-                      >
-                        <Wallet className='h-4 w-4 inline mr-2' />
-                        Centro de Pagos
-                      </button>
-
-                      <button
-                        onClick={goToConfirmarPagos}
-                        className='menuItem w-full text-left'
-                      >
-                        <ClipboardList className='h-4 w-4 inline mr-2' />
-                        Confirmar Pagos
-                      </button>
-                    </>
-                  ) : (
+                  {user?.role !== 'fixer' && (
                     <>
                       <button
                         onMouseDown={(e) => e.stopPropagation()}
@@ -621,15 +668,6 @@ export default function TopMenu() {
                         className='menuItem'
                       >
                         Editar perfil
-                      </button>
-
-                      <button
-                        onMouseDown={(e) => e.stopPropagation()}
-                        onClick={goToMisTrabajos}
-                        className='menuItem w-full text-left'
-                      >
-                        <Briefcase className='h-4 w-4 inline mr-2' />
-                        Mis Trabajos
                       </button>
 
                       <button
@@ -646,6 +684,9 @@ export default function TopMenu() {
                     </>
                   )}
 
+                  {/* MENÚ FIXER MOBILE (Reutilizado) */}
+                  {user?.role === 'fixer' && renderFixerMenu()}
+
                   <button
                     onMouseDown={(e) => e.stopPropagation()}
                     onClick={(e) => {
@@ -658,9 +699,10 @@ export default function TopMenu() {
                   </button>
                 </div>
               )}
-            </>
+            </div>
           )}
 
+          {/* Dropdown Mobile Secondary (Optional) */}
           {accountOpen && isLogged && (
             <div
               ref={dropdownRef}
@@ -681,7 +723,7 @@ export default function TopMenu() {
             </div>
           )}
         </div>
-
+        {/* Barra inferior fija con iconos */}
         <nav className='fixed bottom-0 left-0 right-0 h-16 border-t border-gray-200 bg-white/95 backdrop-blur-sm flex justify-around items-center z-50'>
           {navItems.map((item) => (
             <button
@@ -698,11 +740,12 @@ export default function TopMenu() {
             </button>
           ))}
         </nav>
-
-        <div className='h-16' />
-        <div className='h-16' />
+        {/* Espaciadores para contenido */}
+        <div className='h-16' /> {/* top */}
+        <div className='h-16' /> {/* bottom */}
       </div>
 
+      {/* Spacer Desktop */}
       <div className='hidden lg:block h-20' />
     </>
   );

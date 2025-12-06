@@ -8,20 +8,6 @@ interface Props {
   loading?: boolean;
 }
 
-// 🆕 Agregar interfaz para el error de axios
-interface AxiosErrorResponse {
-  response?: {
-    status?: number;
-    data?: {
-      message?: string;
-      minutesLeft?: number;
-      minutosRestantes?: number;
-      attemptsLeft?: number;
-      intentosRestantes?: number;
-    };
-  };
-}
-
 export default function VerifyTokenModal({ open, onClose, onVerify, loading }: Props) {
   const [code, setCode] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -57,6 +43,13 @@ export default function VerifyTokenModal({ open, onClose, onVerify, loading }: P
     if (lockedInfo) setLockedInfo(null);
   };
 
+  // helper: segundos restantes desde ISO string
+  function secondsUntil(iso?: string | null) {
+    if (!iso) return null;
+    const diff = Math.ceil((new Date(iso).getTime() - Date.now()) / 1000);
+    return diff > 0 ? diff : 0;
+  }
+
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (code.length !== 6) {
@@ -67,34 +60,83 @@ export default function VerifyTokenModal({ open, onClose, onVerify, loading }: P
     }
 
     try {
+      // onVerify debe llamar a verifyToken (fetch) y lanzar errores enriquecidos
       await onVerify(code.trim());
-    } catch (err) {
+    } catch (err: unknown) {
       // Limpio estados anteriores
       setAttemptsLeft(null);
       setLockedInfo(null);
 
+      // Mensaje por defecto
       let msg = 'Código incorrecto o expirado. Intenta nuevamente.';
 
-      // ✅ Type guard con tipado correcto
-      if (err && typeof err === 'object' && 'response' in err) {
-        const axiosError = err as AxiosErrorResponse;
-        const status = axiosError.response?.status;
-        const data = axiosError.response?.data;
+      /**
+       * Normalizamos el error recibido en un objeto con propiedades opcionales.
+       * No usamos `any`. Usamos `unknown` y lo casteamos a un tipo seguro.
+       */
+      const e = err as Record<string, unknown> & {
+        message?: string;
+        status?: number;
+        data?: Record<string, unknown> | null;
+        // campos que puede incluir tu backend/enriquecimiento
+        locked?: boolean;
+        lockedUntil?: string;
+        retryAfterSeconds?: number;
+        attemptsLeft?: number;
+        attempts?: number;
+      };
+
+      // LOCKED (423 en backend -> err.locked true)
+      if (e?.locked) {
+        const retrySeconds =
+          (typeof e.retryAfterSeconds === 'number' && e.retryAfterSeconds) ??
+          secondsUntil((e.lockedUntil as string | undefined) ?? null);
+        const minutes = retrySeconds ? Math.ceil(retrySeconds / 60) : null;
+
+        msg =
+          (e?.message as string) ||
+          'Tu cuenta está temporalmente bloqueada por demasiados intentos.';
+        setLockedInfo(
+          minutes
+            ? `Podrás volver a intentar en aproximadamente ${minutes} minuto(s).`
+            : retrySeconds
+              ? `Podrás volver a intentar en aproximadamente ${retrySeconds} segundos.`
+              : null,
+        );
+      }
+      // TOKEN INVÁLIDO (pero no bloqueado): attemptsLeft presente
+      else if (typeof e?.attemptsLeft === 'number') {
+        msg = (e?.message as string) || 'Token inválido.';
+        setAttemptsLeft(e.attemptsLeft ?? null);
+      }
+      // Posible compatibilidad: err.status + err.data (si tu fetchWithAuth dejó data)
+      else if (typeof e?.status === 'number' && e?.data) {
+        const status = e.status;
+        const data = e.data as Record<string, unknown> | null;
 
         if (status === 423) {
-          // bloqueado por demasiados intentos
-          const minutes = data?.minutesLeft || data?.minutosRestantes || 5;
-
-          setLockedInfo(`Podrás volver a intentar en aproximadamente ${minutes} minuto(s).`);
-          msg = `Cuenta bloqueada por demasiados intentos fallidos. Intenta de nuevo en ${minutes} minutos.`;
-        } else if (status === 429) {
-          // limite de intentos alcanzado pero aún no bloqueado
-          const remaining = data?.attemptsLeft ?? data?.intentosRestantes ?? 0;
-          setAttemptsLeft(remaining);
-          msg = data?.message || `Código incorrecto. Te quedan ${remaining} intentos.`;
-        } else if (status === 400 || status === 401) {
-          msg = data?.message || 'Código incorrecto o expirado.';
+          const retrySeconds =
+            (typeof data?.retryAfterSeconds === 'number' && (data.retryAfterSeconds as number)) ??
+            secondsUntil((data?.lockedUntil as string | undefined) ?? null);
+          const minutes = retrySeconds ? Math.ceil(retrySeconds / 60) : null;
+          msg = (data?.message as string) || 'Tu cuenta está temporalmente bloqueada.';
+          setLockedInfo(
+            minutes
+              ? `Podrás volver a intentar en aproximadamente ${minutes} minuto(s).`
+              : retrySeconds
+                ? `Podrás volver a intentar en aproximadamente ${retrySeconds} segundos.`
+                : null,
+          );
+        } else if (status === 400 && typeof (data?.attemptsLeft as unknown) === 'number') {
+          msg = (data?.message as string) || 'Token inválido.';
+          setAttemptsLeft((data?.attemptsLeft as number) ?? null);
+        } else {
+          msg = (data?.message as string) || e?.message || msg;
         }
+      }
+      // Fallback: usar err.message si existe
+      else if (typeof e?.message === 'string') {
+        msg = e.message;
       }
 
       setErrorMsg(msg);
@@ -115,6 +157,7 @@ export default function VerifyTokenModal({ open, onClose, onVerify, loading }: P
         <p className='text-sm text-gray-600 mb-4'>
           Introduce los 6 dígitos que muestra tu app de autenticación.
         </p>
+
         <input
           autoFocus
           inputMode='numeric'
