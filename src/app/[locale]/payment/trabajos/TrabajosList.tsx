@@ -25,6 +25,7 @@ export default function TrabajosList({ userId }: TrabajosListProps) {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
   useEffect(() => {
+     if (!userId) return; //  EVITAR PETICIONES CON ID NULL
     const fetchJobs = async () => {
       try {
         console.log("📡 Obteniendo trabajos para el usuario:", userId);
