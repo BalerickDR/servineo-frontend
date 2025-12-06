@@ -1,7 +1,10 @@
-"use client";
-import { Suspense, useEffect ,useState } from 'react';
+"use client"; // OBLIGATORIO para usar useEffect y useSearchParams
+
+import { Suspense, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import RechargePageClient from './RechargePageClient'; // Importa el archivo que renombraste
+import RechargePageClient from './RechargePageClient';
+import { useSearchParams } from 'next/navigation';
+
 
 
 // Un componente simple de carga
@@ -16,27 +19,21 @@ function LoadingFallback() {
   );
 }
 
+
+
 // Esta es tu nueva página.
 export default function RechargePage() {
+  const searchParams = useSearchParams();
+  const [fixerId, setFixerId] = useState<string | null>(null);
 
-  const [userId, setUserId] = useState<string | null>(null);
-  // Simulamos un usuario (puedes reemplazarlo con el real)
   useEffect(() => {
-      const token = localStorage.getItem('servineo_user');
-      if (token) {
-        const userData = JSON.parse(token);
-        const id = userData._id || userData.id;
-        setUserId(id);
-      }
-    }, []);
-
-    console.log("User ID in TrabajosRequester:", userId);
-
-
+    const id = searchParams.get("fixerId");
+    setFixerId(id);
+  }, [searchParams]);
 
   return (
     <Suspense fallback={<LoadingFallback />}>
-      <RechargePageClient userid={"6928d79bba289c48b60798ad"}/>
+      <RechargePageClient userid={fixerId}/>
     </Suspense>
   );
 }
