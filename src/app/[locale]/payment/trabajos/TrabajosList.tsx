@@ -31,10 +31,10 @@ export default function TrabajosList({ userId }: TrabajosListProps) {
         const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/api/jobs?userId=${userId}`);
         if (!res.ok) throw new Error("Error al obtener trabajos");
         const data = await res.json();
-        console.log("✅ Trabajos recibidos:", data);
+        console.log(" Trabajos recibidos:", data);
         setJobs(data);
       } catch (err) {
-        console.error("❌ Error:", err);
+        console.error(" Error:", err);
       } finally {
         setLoading(false);
       }
